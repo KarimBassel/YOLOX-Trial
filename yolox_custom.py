@@ -12,32 +12,32 @@ class Exp(MyExp):
         super(Exp, self).__init__()
 
         # ---------------- Dataset Settings ---------------- #
-        # self.data_dir = "D:\YOLOX Dataset"  # Dataset root
-        # self.train_ann = "train.json"
-        # self.val_ann = "val.json"
-        # self.train_img_dir = "images/train"
-        # self.val_img_dir = "images/val"
+        self.data_dir = "D:\YOLOX Dataset"  # Dataset root
+        self.train_ann = "train.json"
+        self.val_ann = "val.json"
+        self.train_img_dir = "images/train"
+        self.val_img_dir = "images/val"
 
-        self.data_dir = r"C:\Users\Karim Bassel\Downloads\coco128\coco128"  # Dataset root
-        self.train_ann = "instances_train2017.json"
-        self.val_ann = "instances_val2017.json"
-        self.train_img_dir = "train2017"
-        self.val_img_dir = "val2017"
+        # self.data_dir = r"C:\Users\Karim Bassel\Downloads\coco128\coco128"  # Dataset root
+        # self.train_ann = "instances_train2017.json"
+        # self.val_ann = "instances_val2017.json"
+        # self.train_img_dir = "train2017"
+        # self.val_img_dir = "val2017"
         
         print(f"Dataset settings: data_dir={self.data_dir}, train_ann={self.train_ann}, val_ann={self.val_ann}")  # Debugging point
 
         # ---------------- Model Settings ---------------- #
-        #self.num_classes = 43  # Change this to match your dataset classes
-        self.num_classes = 71  # Change this to match your dataset classes
+        self.num_classes = 43  # Change this to match your dataset classes
+        #self.num_classes = 71  # Change this to match your dataset classes
         self.depth = 0.33  # Model depth (YOLOX-S)
         self.width = 0.50  # Model width (YOLOX-S)
         
         print(f"Model settings: num_classes={self.num_classes}, depth={self.depth}, width={self.width}")  # Debugging point
 
         # ---------------- Training Settings ---------------- #
-        self.max_epoch = 1  # Total training epochs
+        self.max_epoch = 100  # Total training epochs
         self.data_num_workers = 4  # Number of CPU workers
-        self.eval_interval = 1  # Run validation every 5 epochs
+        self.eval_interval = 5  # Run validation every 5 epochs
         self.warmup_epochs = 5  # Warmup phase
         
         print(f"Training settings: max_epoch={self.max_epoch}, data_num_workers={self.data_num_workers}, "

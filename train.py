@@ -268,6 +268,14 @@ def main(exp: Exp, args):
 
 
 if __name__ == "__main__":
+    import torch
+    print("CUDA Available:", torch.cuda.is_available())
+    print("PyTorch Version:", torch.__version__)
+    print("CUDA Version:", torch.version.cuda)
+    print("cuDNN Version:", torch.backends.cudnn.version())
+    print("GPU Count:", torch.cuda.device_count())
+    print("Current Device:", torch.cuda.current_device() if torch.cuda.is_available() else "No CUDA device found")
+
     configure_module()
     args = make_parser().parse_args()
     exp = get_exp(args.exp_file, args.name)

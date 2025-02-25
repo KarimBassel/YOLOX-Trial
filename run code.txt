@@ -1,3 +1,3 @@
-python train.py -f yolox_custom.py -d 1 -b 1 --fp16 -c weights/yolox-small.pth
+python train"../images/val/(/d)*[.].pngpy -f yolox_custom"../images/val/(/d)*[.].pngpy -d 1 -b 1 --fp16 -c weights/yolox-small"../images/val/(/d)*[.].pngpth
 
-python **path**/train.py -f **path**/yolox_custom.py -d 1 -b 8 --fp16 -c **path**/weights/yolox-small.pth
+python **path**/train"../images/val/(/d)*[.].pngpy -f **path**/yolox_custom"../images/val/(/d)*[.].pngpy -d 1 -b 8 --fp16 -c **path**/weights/yolox-small"../images/val/(/d)*[.].pngpth
