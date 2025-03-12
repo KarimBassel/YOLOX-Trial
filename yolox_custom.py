@@ -12,7 +12,7 @@ class Exp(MyExp):
         super(Exp, self).__init__()
 
         # ---------------- Dataset Settings ---------------- #
-        self.data_dir = "D:\YOLOX Dataset"  # Dataset root
+        self.data_dir = r"D:\Merged Datasets"  # Dataset root
         self.train_ann = "train.json"
         self.val_ann = "val.json"
         self.train_img_dir = "images/train"
@@ -27,7 +27,8 @@ class Exp(MyExp):
         print(f"Dataset settings: data_dir={self.data_dir}, train_ann={self.train_ann}, val_ann={self.val_ann}")  # Debugging point
 
         # ---------------- Model Settings ---------------- #
-        self.num_classes = 43  # Change this to match your dataset classes
+        # self.num_classes = 43  # Change this to match your dataset classes
+        self.num_classes = 10  # Change this to match your dataset classes
         #self.num_classes = 71  # Change this to match your dataset classes
         self.depth = 0.33  # Model depth (YOLOX-S)
         self.width = 0.50  # Model width (YOLOX-S)
@@ -37,26 +38,26 @@ class Exp(MyExp):
         # ---------------- Training Settings ---------------- #
         self.max_epoch = 100  # Total training epochs
         self.data_num_workers = 4  # Number of CPU workers
-        self.eval_interval = 5  # Run validation every 5 epochs
+        self.eval_interval = 1  # Run validation every 5 epochs
         self.warmup_epochs = 5  # Warmup phase
         
         print(f"Training settings: max_epoch={self.max_epoch}, data_num_workers={self.data_num_workers}, "
               f"eval_interval={self.eval_interval}, warmup_epochs={self.warmup_epochs}")  # Debugging point
 
         # ---------------- Optimizer & Learning Rate ---------------- #
-        self.basic_lr_per_img = 0.01 / 64.0
-        self.momentum = 0.9
-        self.weight_decay = 5e-4
-        self.optimizer_type = "adam"
+        # self.basic_lr_per_img = 0.01 / 64.0
+        # self.momentum = 0.9
+        # self.weight_decay = 5e-4
+        # self.optimizer_type = "adam"
         
         print(f"Optimizer settings: basic_lr_per_img={self.basic_lr_per_img}, momentum={self.momentum}, "
               f"weight_decay={self.weight_decay}")  # Debugging point
 
         # ---------------- Advanced Settings ---------------- #
-        self.no_aug_epochs = 10  # Last 10 epochs without augmentation
+        #self.no_aug_epochs = 10  # Last 10 epochs without augmentation
         self.ema = True  # Enable EMA (Exponential Moving Average)
-        self.input_size = (640, 640)
-        self.test_size = (640, 640)
+        self.input_size = (1280,1280)
+        self.test_size = (1280,1280)
 
         print(f"Advanced settings: no_aug_epochs={self.no_aug_epochs}, ema={self.ema}, "
               f"input_size={self.input_size}, test_size={self.test_size}")  # Debugging point

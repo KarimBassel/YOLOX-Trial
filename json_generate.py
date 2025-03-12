@@ -1,6 +1,7 @@
 import json
 from rich.progress import track
 import os
+
 def load_txt(file_name, labels_to_keep):
     """Load and filter gt.txt data based on allowed labels."""
     with open(file_name, 'r') as file:
@@ -8,40 +9,35 @@ def load_txt(file_name, labels_to_keep):
     return data
 
 def parse_gtsdb(data):
-    """Parse annotations from GTSDB and save train/val JSON files."""
+    """Parse annotations from GTSDB and save val JSON files."""
     train_data = {"images": [], "annotations": [], "categories": []}
     val_data = {"images": [], "annotations": [], "categories": []}
 
-    # Category tracking
-    category_set = set()
-    
+    # Define the 10 specific classes to keep
+    categories_dic = {"7": 0, "8": 1, "0": 2, "1": 3, "2": 6, "3": 7, "4": 8, "5": 9}
+    category_set = set(categories_dic.values())  # New category IDs
+
     for annotation in track(data, "Parsing GTSDB..."):
         s = annotation.split(';')
         img_id = int(s[0][:5])
         img_name = s[0]
         xmin, ymin, xmax, ymax = map(int, s[1:5])
-        class_id = int(s[5])  # Using class ID directly from the dataset
+        original_class_id = s[5]
         
-        category_set.add(class_id)
+        # Ignore classes not in categories_dic
+        if original_class_id not in categories_dic:
+            continue
         
+        class_id = categories_dic[original_class_id]  # Remap class ID
         anno_id = len(train_data['annotations']) + len(val_data['annotations'])
-        if img_id <=539:
 
-            img_dict = {
-                "license": 1,
-                "file_name": os.path.join("..", "images", "train", img_name),
-                "height": 800,
-                "width": 1360,
-                "id": img_id
-            }
-        else : 
-            img_dict = {
-                "license": 1,
-                "file_name": os.path.join("..", "images", "val", img_name),
-                "height": 800,
-                "width": 1360,
-                "id": img_id
-            }
+        img_dict = {
+            "license": 1,
+            "file_name": os.path.join("..", "images", "train" if img_id <= 539 else "val", img_name),
+            "height": 800,
+            "width": 1360,
+            "id": img_id
+        }
 
         anno_dict = {
             "segmentation": [[]],
@@ -54,11 +50,11 @@ def parse_gtsdb(data):
         }
 
         # Assign to train or validation set
-        if img_id <= 539:
+        if img_id <= 450:
             if not any(img['id'] == img_id for img in train_data['images']):
                 train_data['images'].append(img_dict)
             train_data['annotations'].append(anno_dict)
-        elif 540 <= img_id <= 599:
+        elif 451 <= img_id <= 599:
             if not any(img['id'] == img_id for img in val_data['images']):
                 val_data['images'].append(img_dict)
             val_data['annotations'].append(anno_dict)
@@ -79,7 +75,7 @@ def parse_gtsdb(data):
 
 # Load the dataset and parse it
 file_path = "D:/YOLOX Dataset/gt.txt"  # Change this to the actual path of gt.txt
-labels_to_keep = set(str(i) for i in range(43))  # Keeping all labels 0-42
+labels_to_keep = set(["7", "8", "0", "1", "2", "3", "4", "5"])  # Only keep the specified 10 classes
 
 data_list = load_txt(file_path, labels_to_keep)
 parse_gtsdb(data_list)
