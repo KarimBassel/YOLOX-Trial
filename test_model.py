@@ -12,7 +12,7 @@ class_names = [
     "pl15", "pl50", "pl60", "pl70", "pl80"
 ]
 
-# Function to preprocess the input image WITHOUT normalization
+
 def preprocess(img, input_size):
     h, w = img.shape[:2]
     scale = min(input_size[0] / h, input_size[1] / w)
@@ -20,8 +20,8 @@ def preprocess(img, input_size):
     image_resized = cv2.resize(img, (nw, nh))
     image_padded = np.full((input_size[0], input_size[1], 3), 114, dtype=np.uint8)
     image_padded[:nh, :nw] = image_resized
-    image_padded = image_padded.astype(np.float32)  # Keep raw pixel values (0-255), no normalization
-    image_padded = image_padded.transpose(2, 0, 1)  # Convert to (C, H, W)
+    image_padded = image_padded.astype(np.float32) 
+    image_padded = image_padded.transpose(2, 0, 1) 
     return torch.from_numpy(image_padded).unsqueeze(0), scale
 # Function to visualize detection results
 def visualize(img, bboxes, scores, cls_ids, class_names, conf_threshold=0.0001):
@@ -33,7 +33,7 @@ def visualize(img, bboxes, scores, cls_ids, class_names, conf_threshold=0.0001):
             continue  # Skip low-confidence detections
 
         # Unpack bounding box coordinates
-        x1, y1, x2, y2 = bbox.astype(int)  # Ensure integers for OpenCV
+        x1, y1, x2, y2 = bbox.astype(int)  
 
         # Clip coordinates to stay within image boundaries
         x1, y1, x2, y2 = max(0, x1), max(0, y1), min(w - 1, x2), min(h - 1, y2)
@@ -53,12 +53,13 @@ def visualize(img, bboxes, scores, cls_ids, class_names, conf_threshold=0.0001):
 # Main inference function
 def main():
     # Path to model weights
-    weights_path = r"YOLOX_outputs\yolox_base\best_ckpt.pth"  # Update as needed
-    input_size = (1024, 1024)  # Match training size
+    weights_path = r"YOLOX_outputs\yolox_base\best_ckpt.pth" 
+    input_size = (1024, 1024) 
 
     # Initialize YOLOX experiment and model
-    exp = get_exp(None, "yolox-s")  # Change model type if needed
-    exp.num_classes = 10  # Set number of classes correctly
+    exp = get_exp(None, "yolox-s")  
+    #number of classes for our dataset
+    exp.num_classes = 10 
     model = exp.get_model()
     model.eval()
 
@@ -69,7 +70,7 @@ def main():
     logger.info("Loaded checkpoint successfully")
 
     # Load and preprocess image
-    image_path = r"D:\Merged Datasets\images\val\5275.jpg"  # Path to test image
+    image_path = r"D:\Merged Datasets\images\val\23019.jpg"  
     img = cv2.imread(image_path)
     if img is None:
         logger.error(f"Image {image_path} not found!")
@@ -81,9 +82,7 @@ def main():
     # --- Inference ---
     with torch.no_grad():
         outputs = model(img_input)  # Model forward pass
-        #outputs = model.head.decode_outputs(outputs, dtype=outputs[0].type())  # Decode outputs for postprocessing
-
-        print("Decoded outputs shape:", outputs.shape)  # Debug output shape
+        print("Decoded outputs shape:", outputs.shape)  
 
         # Extract objectness and class scores for debugging
         objectness = outputs[..., 4]  # [1, 21504]

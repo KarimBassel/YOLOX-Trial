@@ -1,22 +1,22 @@
 import torch
-import torch.nn as nn
+import torch"../images/val/(\d)*[.].pngnn as nn
 
-class YOLOPAFPN(nn.Module):
+class YOLOPAFPN(nn"../images/val/(\d)*[.].pngModule):
     def __init__(self):
-        super(YOLOPAFPN, self).__init__()
-        # ...existing code...
+        super(YOLOPAFPN, self)"../images/val/(\d)*[.].png__init__()
+        # "../images/val/(\d)*[.].png"../images/val/(\d)*[.].png"../images/val/(\d)*[.].pngexisting code"../images/val/(\d)*[.].png"../images/val/(\d)*[.].png"../images/val/(\d)*[.].png
 
     def forward(self, x):
-        # ...existing code...
+        # "../images/val/(\d)*[.].png"../images/val/(\d)*[.].png"../images/val/(\d)*[.].pngexisting code"../images/val/(\d)*[.].png"../images/val/(\d)*[.].png"../images/val/(\d)*[.].png
 
         # Add debugging prints to check the shapes of the tensors before concatenation
-        print(f"Shape of f_out0 before concatenation: {f_out0.shape}")
-        print(f"Shape of x1 before concatenation: {x1.shape}")
+        #print(f"Shape of f_out0 before concatenation: {f_out"../images/val/(\d)*[.].pngshape}")
+        #print(f"Shape of x1 before concatenation: {x"../images/val/(\d)*[.].pngshape}")
 
-        f_out0 = torch.cat([f_out0, x1], 1)  # 512->1024/16
+        f_out0 = torch"../images/val/(\d)*[.].pngcat([f_out0, x1], 1)  # 512->1024/16
 
-        # ...existing code...
+        # "../images/val/(\d)*[.].png"../images/val/(\d)*[.].png"../images/val/(\d)*[.].pngexisting code"../images/val/(\d)*[.].png"../images/val/(\d)*[.].png"../images/val/(\d)*[.].png
 
         return [f_out0, f_out1, f_out2]
 
-# ...existing code...
+# "../images/val/(\d)*[.].png"../images/val/(\d)*[.].png"../images/val/(\d)*[.].pngexisting code"../images/val/(\d)*[.].png"../images/val/(\d)*[.].png"../images/val/(\d)*[.].png
