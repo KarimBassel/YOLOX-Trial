@@ -41,8 +41,11 @@ class DenseLayer(Module):
             prev_features = torch.concat([x], 1)
         else:
             prev_features = torch.concat(x, 1)
-
+        prev_features = torch.clamp(prev_features, min=-1e6, max=1e6)  # Clamp to avoid extreme values
+        # print("DenseLayer - Input shape:", prev_features.shape, "Contains NaN:", torch.isnan(prev_features).any())
         out = self.layers(prev_features)
+        out = torch.clamp(out, min=-1e6, max=1e6)  # Clamp output
+        # print("DenseLayer - Output shape:", out.shape, "Contains NaN:", torch.isnan(out).any())
         return out
 
 
@@ -61,10 +64,14 @@ class DenseBlock(ModuleDict):
 
     def forward(self, init_features):
         features = [init_features]
+        # print("DenseBlock - Initial features shape:", init_features.shape, "Contains NaN:", torch.isnan(init_features).any())
         for name, layer in self.items():
             new_features = layer(features)
+            # print(f"DenseBlock - Layer {name} output shape:", new_features.shape, "Contains NaN:", torch.isnan(new_features).any())
             features.append(new_features)
-        return torch.concat(features, 1)
+        concatenated_features = torch.concat(features, 1)
+        # print("DenseBlock - Concatenated features shape:", concatenated_features.shape, "Contains NaN:", torch.isnan(concatenated_features).any())
+        return concatenated_features
 
 
 class Transition(Sequential):
@@ -73,17 +80,64 @@ class Transition(Sequential):
         self.add_module('norm', BatchNorm2d(num_input_features))
         self.add_module('relu', ReLU(inplace=True))
         self.add_module('conv', Conv2d(num_input_features, num_output_features,
-                                       kernel_size=kernel_size, stride=stride,padding=1,bias=False))
-        self.add_module('dropout', Dropout2d(p=0.1,inplace=True))
+                                       kernel_size=kernel_size, stride=stride, padding=1, bias=False))
+        self.add_module('dropout', Dropout2d(p=0.1, inplace=True))
+
+    def forward(self, x):
+        x = torch.clamp(x, min=-1e6, max=1e6)  # Clamp input to Transition
+        # print("Transition - Input shape:", x.shape, "Contains NaN:", torch.isnan(x).any())
+        
+        # Debug BatchNorm2d
+        norm_out = self.norm(x)
+        norm_out = torch.clamp(norm_out, min=-1e6, max=1e6)  # Clamp after BatchNorm2d
+        # print("Transition - After BatchNorm2d shape:", norm_out.shape, "Contains NaN:", torch.isnan(norm_out).any())
+        
+        # Debug ReLU
+        relu_out = self.relu(norm_out)
+        relu_out = torch.clamp(relu_out, min=-1e6, max=1e6)  # Clamp after ReLU
+        # print("Transition - After ReLU shape:", relu_out.shape, "Contains NaN:", torch.isnan(relu_out).any())
+        
+        # Add small epsilon to stabilize input
+        relu_out = relu_out + 1e-8
+        
+        # Debug Conv2d weights
+        # print("Transition - Conv2d weights contain NaN:", torch.isnan(self.conv.weight).any())
+        # print("Transition - Conv2d weights max value:", self.conv.weight.max())
+        # print("Transition - Conv2d weights min value:", self.conv.weight.min())
+        
+        # Debug Conv2d input
+        # print("Transition - Conv2d input contains NaN:", torch.isnan(relu_out).any())
+        
+        # Conv2d operation
+        conv_out = self.conv(relu_out)
+        conv_out = torch.clamp(conv_out, min=-1e6, max=1e6)  # Clamp after Conv2d
+        # print("Transition - After Conv2d shape:", conv_out.shape, "Contains NaN:", torch.isnan(conv_out).any())
+        
+        # Debug Dropout
+        dropout_out = self.dropout(conv_out)
+        dropout_out = torch.clamp(dropout_out, min=-1e6, max=1e6)  # Clamp after Dropout
+        # print("Transition - After Dropout shape:", dropout_out.shape, "Contains NaN:", torch.isnan(dropout_out).any())
+        
+        return dropout_out
 
 class Fuse(Module):
     def __init__(self) -> None:
         super(Fuse, self).__init__()
 
     def forward(self, small_image, large_image):
-        upscaled_image = F.interpolate(small_image, size=large_image.shape[2:], mode="bilinear")
+        small_image = torch.clamp(small_image, min=-1e6, max=1e6)  # Clamp small image
+        large_image = torch.clamp(large_image, min=-1e6, max=1e6)  # Clamp large image
+        # print("Fuse - Small image shape:", small_image.shape, "Contains NaN:", torch.isnan(small_image).any())
+        # print("Fuse - Large image shape:", large_image.shape, "Contains NaN:", torch.isnan(large_image).any())
+        # Use adaptive pooling to match dimensions
+        target_size = large_image.shape[2:]
+        upscaled_image = F.interpolate(small_image, size=target_size, mode="bilinear", align_corners=True)
+        upscaled_image = torch.clamp(upscaled_image, min=-1e6, max=1e6)  # Clamp after interpolation
+        # print("Fuse - Upscaled image shape:", upscaled_image.shape, "Contains NaN:", torch.isnan(upscaled_image).any())
         result_image = torch.cat((upscaled_image, large_image), dim=1)
-        return result_image 
+        result_image = torch.clamp(result_image, min=-1e6, max=1e6)  # Clamp concatenated result
+        # print("Fuse - Result image shape:", result_image.shape, "Contains NaN:", torch.isnan(result_image).any())
+        return result_image  
 
 class HGD(Module):
     def __init__(
@@ -149,9 +203,13 @@ class HGD(Module):
                 padding = 2
                 stride = 2
 
+            # print(f"Creating Transition layer {i}:")
+            # print(f"  Input channels: {inp + num_layers * growth_rate}, Output channels: {out}")
+            # print(f"  Kernel size: {kernel_size}, Stride: {stride}, Padding: {padding}")
+
             transition = Transition(
                 inp + num_layers * growth_rate, out,
-                  padding=padding, kernel_size=kernel_size, stride=stride)
+                padding=padding, kernel_size=kernel_size, stride=stride)
             self.add_module(f"forward_{i}", dense_block)
             self.add_module(f"forward_transition_{i}", transition)
 
@@ -179,45 +237,54 @@ class HGD(Module):
             self.add_module(f"backward_transition_{i}", transition)
             
     def forward(self, input):
+        input = torch.clamp(input, min=-1e6, max=1e6)  # Clamp input to the model
         # Backward path
         stem_out = self.stem(input)
-        # print(stem_out.shape)
+        stem_out = torch.clamp(stem_out, min=-1e6, max=1e6)  # Clamp after stem
+        # print("Stem output shape:", stem_out.shape, "Contains NaN:", torch.isnan(stem_out).any())
         out_forward = []
         out_forward.append(self.forward_transition_0(self.forward_0(stem_out)))
+        # print("Forward path - Layer 0 output shape:", out_forward[0].shape, "Contains NaN:", torch.isnan(out_forward[0]).any())
         out_forward.append(self.forward_transition_1(self.forward_1(out_forward[0])))
+        # print("Forward path - Layer 1 output shape:", out_forward[1].shape, "Contains NaN:", torch.isnan(out_forward[1]).any())
         out_forward.append(self.forward_transition_2(self.forward_2(out_forward[1])))
+        # print("Forward path - Layer 2 output shape:", out_forward[2].shape, "Contains NaN:", torch.isnan(out_forward[2]).any())
         out_forward.append(self.forward_transition_3(self.forward_3(out_forward[2])))
+        # print("Forward path - Layer 3 output shape:", out_forward[3].shape, "Contains NaN:", torch.isnan(out_forward[3]).any())
         out_forward.append(self.forward_transition_4(self.forward_4(out_forward[3])))
-        # for out in out_forward: 
-        #     print(out.shape)
+        # print("Forward path - Layer 4 output shape:", out_forward[4].shape, "Contains NaN:", torch.isnan(out_forward[4]).any())
 
         out_backward = self.fuse(out_forward[4], out_forward[3])
-        # print(out_backward.shape)
+        # print("Backward path - After fuse with Layer 4 and Layer 3 output shape:", out_backward.shape, "Contains NaN:", torch.isnan(out_backward).any())
         out_backward = self.backward_transition_0(self.backward_0(out_backward))
-        # print(out_backward.shape, out_forward[2].shape, out_forward[3].shape)
+        # print("Backward path - After backward transition 0 output shape:", out_backward.shape, "Contains NaN:", torch.isnan(out_backward).any())
 
         out_backward = self.fuse(out_backward, out_forward[2])
-        # print(out_backward.shape)
+        # print("Backward path - After fuse with Layer 2 output shape:", out_backward.shape, "Contains NaN:", torch.isnan(out_backward).any())
         out_backward = self.backward_transition_1(self.backward_1(out_backward))
-        # print(out_backward.shape)
+        # print("Backward path - After backward transition 1 output shape:", out_backward.shape, "Contains NaN:", torch.isnan(out_backward).any())
 
         out_backward = self.fuse(out_backward, out_forward[1])
-        # print(out_backward.shape)
+        # print("Backward path - After fuse with Layer 1 output shape:", out_backward.shape, "Contains NaN:", torch.isnan(out_backward).any())
         out_backward = self.backward_transition_2(self.backward_2(out_backward))
+        # print("Backward path - After backward transition 2 output shape:", out_backward.shape, "Contains NaN:", torch.isnan(out_backward).any())
 
         out_backward = self.fuse(out_backward, out_forward[0])
-        # print(out_backward.shape)
+        # print("Backward path - After fuse with Layer 0 output shape:", out_backward.shape, "Contains NaN:", torch.isnan(out_backward).any())
         out_backward = self.backward_transition_3(self.backward_3(out_backward))
-        # print(out_backward.shape)
+        # print("Backward path - After backward transition 3 output shape:", out_backward.shape, "Contains NaN:", torch.isnan(out_backward).any())
 
         out_backward = self.reverse_stem(out_backward)
+        out_backward = torch.clamp(out_backward, min=-1e6, max=1e6)  # Clamp after reverse stem
+        # print("Reverse stem output shape:", out_backward.shape, "Contains NaN:", torch.isnan(out_backward).any())
         out_backward = self.conv(out_backward)
-
+        out_backward = torch.clamp(out_backward, min=-1e6, max=1e6)  # Clamp final output
+        # print("Final output shape:", out_backward.shape, "Contains NaN:", torch.isnan(out_backward).any())
         return out_backward
 
 if __name__ == "__main__":
     model = HGD(width=0.5)
-    input = torch.randn((1, 3, 640, 640))
+    input = torch.randn((1, 3, 500, 500))
     def count_parameters(model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(count_parameters(model))

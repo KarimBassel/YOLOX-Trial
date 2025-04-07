@@ -1,5 +1,5 @@
 from attack.fgsm import FGSM
-from custom_yolo import yolox_loss, yolox_target_generator
+from model.custom_yolo import yolox_loss, yolox_target_generator
 import cv2
 import os
 from defense.generate_FPN import get_model
@@ -36,7 +36,7 @@ def generate_attacked_samples(dataloader, split_name, eps=4):
             splitpath = splits[-1]
             sp = str(splitpath).split(".")
             img_name, img_extension = sp[0], sp[-1]
-            output_path = os.path.join("D:/Merged Datasets", 'attacked_images', split_name, f"{img_name}_{eps}.{img_extension}")
+            output_path = os.path.join("D:/Merged Datasets", 'attacked_images1024', split_name, f"{img_name}_{eps}.{img_extension}")
             
             # print(f"Saving image: {output_path}")  # Debugging line
             success = cv2.imwrite(output_path, outputs[pic_idx].transpose((1, 2, 0)))
@@ -82,13 +82,13 @@ if __name__ == "__main__":
 
     # Delete previous attacked images
     try:
-        shutil.rmtree(os.path.join(datasets_path, 'attacked_images', 'train'))
-        shutil.rmtree(os.path.join(datasets_path, 'attacked_images', 'val'))
+        shutil.rmtree(os.path.join(datasets_path, 'attacked_images1024', 'train'))
+        shutil.rmtree(os.path.join(datasets_path, 'attacked_images1024', 'val'))
     except Exception as e:
         print(f"Error deleting previous attacked images: {e}")
 
-    os.makedirs(os.path.join(datasets_path, 'attacked_images', 'train'), exist_ok=True)
-    os.makedirs(os.path.join(datasets_path, 'attacked_images', 'val'), exist_ok=True)
+    os.makedirs(os.path.join(datasets_path, 'attacked_images1024', 'train'), exist_ok=True)
+    os.makedirs(os.path.join(datasets_path, 'attacked_images1024', 'val'), exist_ok=True)
 
     train_dataset = COCODataset(
         os.path.join(datasets_path, 'train'),
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     )
     val_dataloader = DataLoader(val_dataset, batch_size=batch_size, pin_memory=True)
 
-    eps_values = [0, 1, 2, 3, 4, 5]
+    eps_values = [1, 2, 3, 4, 5]
 
     for eps in eps_values:
         print(f"Generating attacked samples for eps={eps}")

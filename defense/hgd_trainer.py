@@ -16,7 +16,9 @@ from tqdm.auto import tqdm
 from torchviz import make_dot
 from yolox.models import IOUloss
 from defense.high_level_guided_denoiser import HGD
+from defense.Denoiser2 import AutoEncoder
 import pandas as pd
+from torch.nn import Module, BatchNorm2d, ReLU, Conv2d, Sequential, ConvTranspose2d, Dropout2d,MaxPool2d,Upsample
 from torch.utils.tensorboard import SummaryWriter
 
 class COCODataset(data.Dataset):
@@ -29,7 +31,7 @@ class COCODataset(data.Dataset):
             ):
         #self.coco = COCO(annotaiton_file)
         self.orig_images_path = orig_images_path
-        self.transofms = transforms
+        self.transforms = transforms
         self.attacked_images_path = attacked_images_path
         df = pd.read_csv(csv_file_path)
         self.attacked_images = df['attacked_images']
@@ -49,10 +51,27 @@ class COCODataset(data.Dataset):
         orig_image_path = os.path.join(self.orig_images_path,orig_image_name)
 
         attacked_image = cv2.imread(attacked_image_path).transpose((2,0,1))
-        # attacked_image = np.asarray(attacked_image,dtype=np.float32)
-
+        #attacked_image = cv2.imread(attacked_image_path)
+        attacked_image = np.asarray(attacked_image,dtype=np.float32)
+        attacked_image /= 255.0
+        #print(attacked_image_path)
+        #print(orig_image_path)
         orig_image = cv2.imread(orig_image_path)
         orig_image = self.preprocessor.preprocess_model_input(orig_image)
+
+        # Normalize original image to [0, 1]
+        orig_image = orig_image.astype(np.float32)  # Ensure correct data type
+        orig_image /= 255.0
+        # print(orig_image.shape)
+        # print("Attacked Image Stats:", attacked_image.min(), attacked_image.max(), attacked_image.mean())
+        # print("Orig Image Stats:", orig_image.min(), orig_image.max(), orig_image.mean())
+        # attacked_image = torch.tensor(attacked_image, dtype=torch.float32)
+        # orig_image = torch.tensor(orig_image, dtype=torch.float32)
+        # if torch.isnan(attacked_image).any():
+        #     raise ValueError("NaN detected in attacked_image after processing")
+
+        # if torch.isnan(orig_image).any():
+        #     raise ValueError("NaN detected in orig_image after processing")
 
         # model_output_path = os.path.join(self.model_outputs_path,
         #                                   self.benign_model_outputs[index])
@@ -61,8 +80,8 @@ class COCODataset(data.Dataset):
         # features = (model_output['p3'], model_output['p4'], model_output['p5'])
 
           
-        if self.transofms is not None:
-            img, attacked_image = self.transofms(img, attacked_image)
+        if self.transforms is not None:
+            img, attacked_image = self.transforms(img, attacked_image)
         return attacked_image, orig_image
 
 class ExperimentalLoss(nn.Module):
@@ -81,6 +100,9 @@ class ExperimentalLoss(nn.Module):
         # benign_output = benign_output.type(torch.float32)
 
         p3_loss = torch.abs(benign_output[0] - denoised_output[0]).mean()
+        #print(benign_output[0])
+        #print("KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK")
+        #print(denoised_output[0])
         p4_loss = torch.abs(benign_output[1] - denoised_output[1]).mean()
         p5_loss = torch.abs(benign_output[2] - denoised_output[2]).mean()
         
@@ -95,7 +117,9 @@ class ExperimentalLoss(nn.Module):
                                           torch.zeros_like(noise))
                                           , 2).mean()
         noise_loss *= self.regularization_factor
-
+        # print(p3_loss)
+        # print(p4_loss)
+        # print(p5_loss)
         total_loss = p3_loss + p4_loss + p5_loss +  denoised_image_loss + noise_loss
 
         losses = {
@@ -134,7 +158,7 @@ class Preprocessor:
 
         padded_img = padded_img.transpose(swap)
         padded_img = np.ascontiguousarray(padded_img, dtype=np.float32)
-
+        #padded_img /= 255.0
         return padded_img
 
 
@@ -243,16 +267,14 @@ class Trainer:
         for i, (perturbed_images, orig_images) in train_bpar:
             with torch.cuda.amp.autocast(enabled=self.fp16):
                 orig_images = orig_images.to(self.data_type).to(self.device)
-
                 perturbed_images = perturbed_images.to(self.data_type).to(self.device)
                 noise = self.model(perturbed_images)
+                # print("NOISE" , noise)
                 self.target_model.eval()
                 denoised_images = perturbed_images - noise
                 target_model_outputs = self.target_model(denoised_images)
-
                 with torch.no_grad():
                     target_model_targets = self.target_model(orig_images)
-
                 losses = self.criterion(target_model_outputs,
                                         target_model_targets,
                                         noise,
@@ -262,7 +284,7 @@ class Trainer:
                 # self.__visualize(loss, dict(self.model.named_parameters()) |
                 #                   dict(self.target_model.named_parameters()), "Train Loop6")
                 train_bpar.set_description(f'train_loss: {loss.item():.4f}')
-            
+                #print(loss)
             # self.__visualize(loss, dict(self.target_model.named_parameters()) |
             #                  dict(self.model.named_parameters()), "Features Loop")
 
@@ -323,8 +345,8 @@ class Trainer:
             with torch.cuda.amp.autocast(enabled=self.fp16):
                 orig_images = orig_images.to(self.data_type).to(self.device)
                 perturbed_images = perturbed_images.to(self.data_type).to(self.device)
-                noise = self.model(perturbed_images)
-                
+                noise = self.model(orig_images)
+                print("NOISE" , noise)
                 #hgd_outputs = hgd_outputs.type(torch.float32)
                 denoised_images = perturbed_images - noise
                 target_model_outputs = self.target_model(denoised_images)
@@ -357,27 +379,27 @@ class Trainer:
                                  f"{train_losses['total_loss']}" \
                                  f",val_loss: {math.nan}")
             self.print_losses(train_losses, "train")
-            val_losses = self.val_epoch(epoch)
+            #val_losses = self.val_epoch(epoch)
 
-            bpar.set_description(f"Epoch {epoch + 1}, train_loss: "\
-                                 f"{train_losses['total_loss']}" \
-                                 f",val_loss: {val_losses['total_loss']}")
-            self.print_losses(val_losses, "val")
+            # bpar.set_description(f"Epoch {epoch + 1}, train_loss: "\
+            #                      f"{train_losses['total_loss']}" \
+            #                      f",val_loss: {val_losses['total_loss']}")
+            # self.print_losses(val_losses, "val")
 
-            print(f"Epoch number {epoch + 1}/{n_epochs},"\
-                  f"train_loss: {train_losses['total_loss']},"\
-                  f" val_loss: {val_losses['total_loss']}")
+            # print(f"Epoch number {epoch + 1}/{n_epochs},"\
+            #       f"train_loss: {train_losses['total_loss']},"\
+            #       f" val_loss: {val_losses['total_loss']}")
 
-            self.scheduler.step(val_losses['total_loss'])
+            # self.scheduler.step(val_losses['total_loss'])
 
-            self.save_checkpoint(val_losses, epoch)
+            # self.save_checkpoint(val_losses, epoch)
             
             self.write_to_tensorboard(train_losses, epoch, 'train')
-            self.write_to_tensorboard(val_losses, epoch, 'val')
+            #self.write_to_tensorboard(val_losses, epoch, 'val')
             self.writer.flush()
 
-            if self.early_stopper.early_stop(val_losses['total_loss']):
-                break
+            # if self.early_stopper.early_stop(val_losses['total_loss']):
+            #     break
 
 """TODO::
  load the sched and optimizer states for train resume
@@ -403,28 +425,28 @@ if __name__ == "__main__":
 
     model = get_HGD_model(device, 'last_ckpt.pt') if resume_training else \
         HGD(width=1, growth_rate=32, bn_size=4) 
+    # model = ComplexAutoEncoder().cuda()
 
-    dataset_path = os.path.join(
-        os.path.dirname(os.getcwd()),'model','datasets','tsinghua_gtsdb_speedlimit')
-    model_outputs_path= os.path.join(
-        os.path.dirname(os.getcwd()),'model','datasets','model_features')
+    dataset_path = "D:\Merged Datasets"
+    # model_outputs_path= os.path.join(
+    #     os.path.dirname(os.getcwd()),'model','datasets','model_features')
     attacked_images_path = os.path.join(
-        os.path.dirname(os.getcwd()),'model','datasets','attacked_images')
+        dataset_path,'attacked_images')
 
     annotations_path = os.getcwd() #os.path.join(dataset_path,'annotations')
     train_dataset = COCODataset(
-        os.path.join(dataset_path,'train2017'),
+        os.path.join(dataset_path,'images','train'),
         os.path.join(attacked_images_path,'train.csv'),
         os.path.join(attacked_images_path,'train'))
     # test_dataset = COCODataset(os.path.join(dataset_path,'test2017'),os.path.join(annotations_path,'test2017.json'))
     val_dataset = COCODataset(
-        os.path.join(dataset_path,'val2017'),
+        os.path.join(dataset_path,'images','val'),
         os.path.join(attacked_images_path,'val.csv'),
         os.path.join(attacked_images_path,'val'))
     
 
-    batch_size_train = 8
-    batch_size_val = 32
+    batch_size_train = 1
+    batch_size_val = 2
     num_workers = 2
     prefetch_factor = 5
     train_dataloader = DataLoader(train_dataset,batch_size= batch_size_train,
@@ -434,8 +456,8 @@ if __name__ == "__main__":
 
     target_model = get_model(device).backbone
 
-    # optimizer = optim.SGD(model.parameters(),lr= 1e-4,momentum=0.9)
-    optimizer = optim.Adam(model.parameters(), lr=1e-2)
+    #optimizer = optim.SGD(model.parameters(),lr= 1e-4,momentum=0.9)
+    optimizer = optim.Adam(model.parameters(), lr=1e-4)
     trainer = Trainer(
         model,
         target_model,
