@@ -1,3 +1,13 @@
 /YOLOX_outputs
 /runs
 /__pycache__
+best_ckpt.pt
+/defense/__pycache__
+*.jpg
+last_ckpt.pt
+examples/__pycache__/test_model.cpython-39.pyc
+defense/__pycache__/generate_original_denoised_csv.cpython-39.pyc
+defense/__pycache__/hgd_trainer.cpython-39.pyc
+defense/__pycache__/high_level_guided_denoiser.cpython-39.pyc
+examples/__pycache__/test_full_model.cpython-39.pyc
+*.pyc

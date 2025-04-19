@@ -5,7 +5,7 @@ import pandas as pd
 
 # Define paths
 base_path = "D:/Merged Datasets"
-attacked_images_path = os.path.join(base_path, "attacked_images")
+attacked_images_path = os.path.join(base_path, "attacked_images1024")
 original_images_path = os.path.join(base_path, "images")
 
 # Get attacked image file paths

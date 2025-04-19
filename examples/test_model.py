@@ -4,6 +4,8 @@ import numpy as np
 from yolox.exp import get_exp
 from yolox.models import YOLOX
 from yolox.utils import postprocess
+from defense.hgd_trainer import get_HGD_model
+from defense.generate_FPN import get_model
 from loguru import logger
 
 # Define your 10 class names
@@ -54,7 +56,7 @@ def visualize(img, bboxes, scores, cls_ids, class_names, conf_threshold=0.0001):
 def main():
     # Path to model weights
     weights_path = r"YOLOX_outputs\yolox_base\best_ckpt.pth" 
-    input_size = (1024, 1024) 
+    input_size = (640, 640) 
 
     # Initialize YOLOX experiment and model
     exp = get_exp(None, "yolox-s")  
@@ -70,7 +72,9 @@ def main():
     logger.info("Loaded checkpoint successfully")
 
     # Load and preprocess image
-    image_path = r"D:\Merged Datasets\images\val\23019.jpg"  
+    #image_path = r"D:\Merged Datasets\images\val\00185.png"  
+    #image_path = r"D:\Merged Datasets\attacked_images\val\00185_1.png"
+    image_path = r"D:\Merged Datasets\attacked_images\train\2_3.jpg"
     img = cv2.imread(image_path)
     if img is None:
         logger.error(f"Image {image_path} not found!")
