@@ -72,9 +72,8 @@ def main():
     logger.info("Loaded checkpoint successfully")
 
     # Load and preprocess image
-    #image_path = r"D:\Merged Datasets\images\val\00185.png"  
+    image_path = r"D:\Merged Datasets\images\val\93653.jpg"  
     #image_path = r"D:\Merged Datasets\attacked_images\val\00185_1.png"
-    image_path = r"D:\Merged Datasets\attacked_images\train\2_3.jpg"
     img = cv2.imread(image_path)
     if img is None:
         logger.error(f"Image {image_path} not found!")

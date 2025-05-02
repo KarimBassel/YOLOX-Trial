@@ -45,7 +45,6 @@ class Exp(MyExp):
               f"eval_interval={self.eval_interval}, warmup_epochs={self.warmup_epochs}")  # Debugging point
 
         # ---------------- Optimizer & Learning Rate ---------------- #
-        # self.basic_lr_per_img = 0.01 / 64.0
         # self.momentum = 0.9
         # self.weight_decay = 5e-4
         # self.optimizer_type = "adam"
@@ -59,6 +58,8 @@ class Exp(MyExp):
         self.input_size = (1280,1280)
         self.test_size = (1280,1280)
 
+
+        #self.optimizer = "adams"
         print(f"Advanced settings: no_aug_epochs={self.no_aug_epochs}, ema={self.ema}, "
               f"input_size={self.input_size}, test_size={self.test_size}")  # Debugging point
 

@@ -73,7 +73,7 @@ def main():
     weights_path = r"YOLOX_outputs\yolox_base\best_ckpt.pth"
     hgd_ckpt_path = r"best_ckpt.pt"  # path to trained HGD model
     input_size = (1024, 1024)
-    image_path = r"D:\Merged Datasets\attacked_images1024\val\7000_5.jpg"
+    image_path = r"D:\Merged Datasets\attacked_images1024\val\4790_2.jpg"
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     data_type = torch.float16 if torch.cuda.is_available() else torch.float32
