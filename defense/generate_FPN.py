@@ -84,6 +84,30 @@ def dump_split_features(model, data_loader, split, datasets_path, device):
 
 
 
+def get_model_coco(device, model_name="best_ckpt.pth"):
+    # Get the relative path of the current script to the working directory
+    
+    # dir_relative_path = os.path.relpath(
+    #     os.path.dirname(__file__), os.getcwd())
+    ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    YOLOX_OUTPUTS_DIR = os.path.join(ROOT_DIR, "YOLOX_outputs" , "yolox_base")
+    # Get the absolute path to the model weights
+    model_path = os.path.join(YOLOX_OUTPUTS_DIR, model_name)
+    
+    # Load experiment file and initialize model
+    exp = get_exp(None, "yolox-s")  # You can change "yolox-s" if needed
+    exp.num_classes = 80  # Adjust the number of classes to match your dataset
+    model = exp.get_model()
+    model.eval()
+
+    # Load the trained weights
+    logger.info(f"Loading checkpoint from {model_path}")
+    ckpt = torch.load(model_path, map_location="cpu")
+    model.load_state_dict(ckpt["model"])
+    logger.info("Loaded checkpoint successfully")
+
+    return model.to(device)
+
 def get_model(device, model_name="best_ckpt.pth"):
     # Get the relative path of the current script to the working directory
     
@@ -107,7 +131,6 @@ def get_model(device, model_name="best_ckpt.pth"):
     logger.info("Loaded checkpoint successfully")
 
     return model.to(device)
-
 #will be passed to the dataloader
 from PIL import Image
 
