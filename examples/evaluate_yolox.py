@@ -14,7 +14,7 @@ from defense.generate_FPN import get_model
 class_names = ["pl100", "pl120", "pl20", "pl30", "pl40", "pl15", "pl50", "pl60", "pl70", "pl80"]
 
 val_images_dir = r"D:\Merged Datasets"
-annotation_path = r"D:/Merged Datasets/annotations/val_attacked.json"
+annotation_path = r"D:/Merged Datasets/annotations/val.json"
 weights_path = r"YOLOX_outputs\yolox_base\best_ckpt.pth"
 input_size = (1024, 1024)
 

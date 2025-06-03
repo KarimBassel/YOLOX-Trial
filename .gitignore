@@ -12,3 +12,6 @@ defense/__pycache__/high_level_guided_denoiser.cpython-39.pyc
 examples/__pycache__/test_full_model.cpython-39.pyc
 *.pyc
 /Dataset
+/visualizations
+/defense/__pycache__
+/defense/__pycache__
